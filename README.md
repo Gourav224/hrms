@@ -64,6 +64,13 @@ pnpm dev
 
 The frontend will be available at `http://localhost:3000`.
 
+### Default Credentials
+
+After seeding the database, you can log in with:
+
+- **Email**: `admin@hrms.com`
+- **Password**: `admin1234`
+
 ## Features
 
 - **Employee Management**: CRUD operations for employees.
