@@ -9,7 +9,7 @@ from app.services import admins_service as admin_service
 
 
 def bootstrap_admin(db: Session, payload: AdminCreate) -> None:
-    if has_any_admin(db):
+    if admin_service.has_any_admin(db):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Admin already exists. Bootstrap is disabled.",
@@ -36,19 +36,19 @@ def bootstrap_admin(db: Session, payload: AdminCreate) -> None:
 
 
 def login(db: Session, email: str, password: str) -> Token:
-    admin = authenticate_admin(db, email, password)
+    admin = admin_service.authenticate_admin(db, email, password)
     if not admin:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials.",
         )
-    update_last_active(db, admin)
+    admin_service.update_last_active(db, admin)
     access_token = create_access_token(subject=admin.email, role=admin.role)
     return Token(access_token=access_token)
 
 
 def create_manager(db: Session, payload: AdminCreate, actor_id: int) -> None:
-    if get_admin_by_email(db, payload.email):
+    if admin_service.get_admin_by_email(db, payload.email):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Admin with this email already exists.",
@@ -72,9 +72,9 @@ def create_manager(db: Session, payload: AdminCreate, actor_id: int) -> None:
 
 
 def get_session(db: Session, admin_email: str) -> SessionResponse:
-    admin = get_admin_by_email(db, admin_email)
+    admin = admin_service.get_admin_by_email(db, admin_email)
     if not admin:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Admin not found.")
-    admin = update_last_active(db, admin)
+    admin = admin_service.update_last_active(db, admin)
     access_token = create_access_token(subject=admin.email, role=admin.role)
     return SessionResponse(user=admin, token=Token(access_token=access_token))
