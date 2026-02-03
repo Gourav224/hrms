@@ -31,6 +31,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return;
     }
 
+    if (sessionChecked) {
+      if (pathname === AUTH_PATH) {
+        router.replace("/dashboard");
+      }
+      return;
+    }
+
     const syncSession = async () => {
       try {
         const session = await refreshSession();

@@ -10,7 +10,6 @@ from app.schemas.admins import AdminUpdate
 from app.schemas.response import ApiResponse
 from app.utils.response import success_response
 
-
 router = APIRouter(prefix="/admins", tags=["admins"])
 
 
@@ -68,4 +67,3 @@ def delete_admin(
 ):
     admins_controller.delete(db, admin_id, actor_id=current_admin.id)
     return success_response({"status": "deleted"}, message="Admin deleted")
-

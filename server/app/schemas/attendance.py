@@ -35,3 +35,25 @@ class AttendanceUpdate(BaseSchema):
 
 class AttendanceTodayUpsert(BaseSchema):
     status: AttendanceStatus
+
+
+class AttendanceListItem(BaseSchema):
+    id: int
+    employee_id: int
+    employee_code: str
+    employee_name: str
+    employee_email: str
+    department: str
+    date: dt_date
+    status: AttendanceStatus
+    created_at: datetime
+    updated_at: datetime
+    created_by_id: int | None = None
+    updated_by_id: int | None = None
+
+
+class AttendanceStatsPoint(BaseSchema):
+    date: dt_date
+    present: int
+    absent: int
+    unmarked: int

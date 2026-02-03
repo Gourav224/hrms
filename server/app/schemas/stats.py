@@ -11,4 +11,3 @@ class OverviewStats(BaseSchema):
     present: int
     absent: int
     unmarked: int
-

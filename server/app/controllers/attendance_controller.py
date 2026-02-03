@@ -7,35 +7,48 @@ from sqlalchemy.orm import Session
 from app.models import AttendanceStatus
 from app.schemas.attendance import AttendanceCreate, AttendanceUpdate
 from app.services.attendance_service import (
+    attendance_stats,
     attendance_summary,
     create_attendance,
     delete_attendance,
-    upsert_attendance_for_date,
     get_attendance_by_id,
     list_attendance,
+    list_attendance_all,
     update_attendance,
+    upsert_attendance_for_date,
 )
-from app.services.employee_service import get_employee_by_code
+from app.services.employee_service import get_employee_by_id
 
 
 def list_for_employee(
     db: Session,
-    employee_id: str,
+    employee_id: int,
     date_from: date | None,
     date_to: date | None,
     limit: int,
     offset: int,
 ):
-    employee = get_employee_by_code(db, employee_id)
+    employee = get_employee_by_id(db, employee_id)
     if not employee:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
     return list_attendance(db, employee, date_from, date_to, limit, offset)
 
 
-def create_for_employee(
-    db: Session, employee_id: str, payload: AttendanceCreate, actor_id: int | None
+def list_all(
+    db: Session,
+    employee_id: int | None,
+    date_from: date | None,
+    date_to: date | None,
+    limit: int,
+    offset: int,
 ):
-    employee = get_employee_by_code(db, employee_id)
+    return list_attendance_all(db, employee_id, date_from, date_to, limit, offset)
+
+
+def create_for_employee(
+    db: Session, employee_id: int, payload: AttendanceCreate, actor_id: int | None
+):
+    employee = get_employee_by_id(db, employee_id)
     if not employee:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
     try:
@@ -53,16 +66,18 @@ def create_for_employee(
         )
 
 
-def upsert_today(db: Session, employee_id: str, status_value: AttendanceStatus, actor_id: int | None):
-    employee = get_employee_by_code(db, employee_id)
+def upsert_today(
+    db: Session, employee_id: int, status_value: AttendanceStatus, actor_id: int | None
+):
+    employee = get_employee_by_id(db, employee_id)
     if not employee:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
     today = date.today()
     return upsert_attendance_for_date(db, employee, today, status_value, actor_id=actor_id)
 
 
-def get_one(db: Session, employee_id: str, attendance_id: int):
-    employee = get_employee_by_code(db, employee_id)
+def get_one(db: Session, employee_id: int, attendance_id: int):
+    employee = get_employee_by_id(db, employee_id)
     if not employee:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
     attendance = get_attendance_by_id(db, employee, attendance_id)
@@ -73,12 +88,12 @@ def get_one(db: Session, employee_id: str, attendance_id: int):
 
 def update(
     db: Session,
-    employee_id: str,
+    employee_id: int,
     attendance_id: int,
     payload: AttendanceUpdate,
     actor_id: int | None,
 ):
-    employee = get_employee_by_code(db, employee_id)
+    employee = get_employee_by_id(db, employee_id)
     if not employee:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
     attendance = get_attendance_by_id(db, employee, attendance_id)
@@ -100,8 +115,8 @@ def update(
         )
 
 
-def delete(db: Session, employee_id: str, attendance_id: int):
-    employee = get_employee_by_code(db, employee_id)
+def delete(db: Session, employee_id: int, attendance_id: int):
+    employee = get_employee_by_id(db, employee_id)
     if not employee:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
     attendance = get_attendance_by_id(db, employee, attendance_id)
@@ -112,11 +127,11 @@ def delete(db: Session, employee_id: str, attendance_id: int):
 
 def summary(
     db: Session,
-    employee_id: str,
+    employee_id: int,
     date_from: date | None,
     date_to: date | None,
 ):
-    employee = get_employee_by_code(db, employee_id)
+    employee = get_employee_by_id(db, employee_id)
     if not employee:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
     stats = attendance_summary(db, employee, date_from, date_to)
@@ -127,3 +142,16 @@ def summary(
         "total_present": stats["present"],
         "total_absent": stats["absent"],
     }
+
+
+def stats(
+    db: Session,
+    date_from: date,
+    date_to: date,
+    employee_id: int | None,
+):
+    if employee_id is not None:
+        employee = get_employee_by_id(db, employee_id)
+        if not employee:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
+    return attendance_stats(db, date_from, date_to, employee_id)

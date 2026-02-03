@@ -1,7 +1,9 @@
 "use client";
 
+import { toast } from "sonner";
 import useSWRMutation from "swr/mutation";
 
+import { getErrorMessage } from "@/lib/api/handlers";
 import { loginRequest, refreshSession } from "@/lib/api/mutations";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -17,7 +19,11 @@ export const useAuth = () => {
     "/auth/login",
     async (_key, { arg }: { arg: LoginArgs }) => loginRequest(arg.email, arg.password),
     {
-      onSuccess: (data) => setToken(data.access_token),
+      onSuccess: (data) => {
+        setToken(data.access_token);
+        toast.success("Signed in successfully.");
+      },
+      onError: (err) => toast.error(getErrorMessage(err)),
     },
   );
 

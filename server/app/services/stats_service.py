@@ -38,4 +38,3 @@ def overview_stats(db: Session, date_value: date) -> dict:
         "absent": int(absent or 0),
         "unmarked": int(unmarked or 0),
     }
-

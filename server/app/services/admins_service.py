@@ -1,9 +1,10 @@
-from __future__ import annotations
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.core.rbac import Role
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.models import Admin
 
 
@@ -26,13 +27,17 @@ def get_admin(db: Session, admin_id: int) -> Admin | None:
     return db.query(Admin).filter(Admin.id == admin_id).first()
 
 
+def get_admin_by_email(db: Session, email: str) -> Admin | None:
+    return db.query(Admin).filter(Admin.email == email).first()
+
+
 def create_admin_user(
     db: Session,
     name: str | None,
     email: str,
     password: str,
     role: Role,
-    actor_id: int,
+    actor_id: int | None,
 ) -> Admin:
     admin = Admin(
         name=name,
@@ -48,7 +53,7 @@ def create_admin_user(
     return admin
 
 
-def update_admin_user(db: Session, admin: Admin, updates: dict, actor_id: int) -> Admin:
+def update_admin_user(db: Session, admin: Admin, updates: dict[str, Any], actor_id: int) -> Admin:
     if "password" in updates:
         password = updates.pop("password")
         if password:
@@ -65,3 +70,23 @@ def delete_admin_user(db: Session, admin: Admin) -> None:
     db.delete(admin)
     db.commit()
 
+
+def authenticate_admin(db: Session, email: str, password: str) -> Admin | None:
+    admin = get_admin_by_email(db, email)
+    if not admin:
+        return None
+    if not verify_password(password, admin.password_hash):
+        return None
+    return admin
+
+
+def has_any_admin(db: Session) -> bool:
+    return db.query(Admin).first() is not None
+
+
+def update_last_active(db: Session, admin: Admin) -> Admin:
+    admin.last_active_at = datetime.now(UTC)
+    admin.updated_by_id = admin.id
+    db.commit()
+    db.refresh(admin)
+    return admin

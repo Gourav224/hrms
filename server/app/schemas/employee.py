@@ -8,7 +8,6 @@ from app.schemas.base import BaseSchema
 
 
 class EmployeeCreate(BaseSchema):
-    employee_id: str = Field(min_length=1, max_length=50)
     full_name: str = Field(min_length=1, max_length=120)
     email: EmailStr
     department: str = Field(min_length=1, max_length=120)

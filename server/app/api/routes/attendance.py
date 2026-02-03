@@ -8,10 +8,14 @@ from app.core.deps import require_roles
 from app.core.rbac import Role
 from app.db.deps import get_db
 from app.models import AttendanceStatus as ModelAttendanceStatus
-from app.schemas.attendance import AttendanceCreate, AttendanceRead, AttendanceTodayUpsert, AttendanceUpdate
+from app.schemas.attendance import (
+    AttendanceCreate,
+    AttendanceRead,
+    AttendanceTodayUpsert,
+    AttendanceUpdate,
+)
 from app.schemas.response import ApiResponse
 from app.utils.response import success_response
-
 
 router = APIRouter(prefix="/employees/{employee_id}/attendance", tags=["attendance"])
 
@@ -22,7 +26,7 @@ router = APIRouter(prefix="/employees/{employee_id}/attendance", tags=["attendan
     dependencies=[Depends(require_roles(Role.ADMIN, Role.MANAGER))],
 )
 def attendance_summary(
-    employee_id: str,
+    employee_id: int,
     db: Session = Depends(get_db),
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
@@ -37,7 +41,7 @@ def attendance_summary(
     dependencies=[Depends(require_roles(Role.ADMIN, Role.MANAGER))],
 )
 def list_attendance(
-    employee_id: str,
+    employee_id: int,
     db: Session = Depends(get_db),
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
@@ -57,7 +61,7 @@ def list_attendance(
     dependencies=[Depends(require_roles(Role.ADMIN, Role.MANAGER))],
 )
 def get_attendance(
-    employee_id: str,
+    employee_id: int,
     attendance_id: int,
     db: Session = Depends(get_db),
 ):
@@ -67,7 +71,7 @@ def get_attendance(
 
 @router.put("/today", response_model=ApiResponse[AttendanceRead])
 def upsert_today_attendance(
-    employee_id: str,
+    employee_id: int,
     payload: AttendanceTodayUpsert,
     db: Session = Depends(get_db),
     current_admin=Depends(require_roles(Role.ADMIN, Role.MANAGER)),
@@ -83,7 +87,7 @@ def upsert_today_attendance(
 
 @router.post("", response_model=ApiResponse[AttendanceRead], status_code=status.HTTP_201_CREATED)
 def create_attendance(
-    employee_id: str,
+    employee_id: int,
     payload: AttendanceCreate,
     db: Session = Depends(get_db),
     current_admin=Depends(require_roles(Role.ADMIN, Role.MANAGER)),
@@ -96,7 +100,7 @@ def create_attendance(
 
 @router.patch("/{attendance_id}", response_model=ApiResponse[AttendanceRead])
 def update_attendance(
-    employee_id: str,
+    employee_id: int,
     attendance_id: int,
     payload: AttendanceUpdate,
     db: Session = Depends(get_db),
@@ -110,7 +114,7 @@ def update_attendance(
 
 @router.delete("/{attendance_id}", response_model=ApiResponse[dict])
 def delete_attendance(
-    employee_id: str,
+    employee_id: int,
     attendance_id: int,
     db: Session = Depends(get_db),
     current_admin=Depends(require_roles(Role.ADMIN)),

@@ -6,7 +6,8 @@ from app.schemas.employee import EmployeeCreate, EmployeeUpdate
 from app.services.employee_service import (
     create_employee,
     delete_employee,
-    get_employee_by_code,
+    get_employee_by_email,
+    get_employee_by_id,
     list_employees,
     update_employee,
 )
@@ -17,10 +18,14 @@ def list_all(db: Session, limit: int, offset: int, search: str | None):
 
 
 def create(db: Session, payload: EmployeeCreate, actor_id: int | None):
+    if get_employee_by_email(db, str(payload.email)):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Employee with this email already exists.",
+        )
     try:
         return create_employee(
             db,
-            employee_id=payload.employee_id,
             full_name=payload.full_name,
             email=str(payload.email),
             department=payload.department,
@@ -29,19 +34,19 @@ def create(db: Session, payload: EmployeeCreate, actor_id: int | None):
     except IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Employee with this employee_id or email already exists.",
+            detail="Employee with this email already exists.",
         )
 
 
-def get_one(db: Session, employee_id: str):
-    employee = get_employee_by_code(db, employee_id)
+def get_one(db: Session, employee_id: int):
+    employee = get_employee_by_id(db, employee_id)
     if not employee:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
     return employee
 
 
-def update(db: Session, employee_id: str, payload: EmployeeUpdate, actor_id: int | None):
-    employee = get_employee_by_code(db, employee_id)
+def update(db: Session, employee_id: int, payload: EmployeeUpdate, actor_id: int | None):
+    employee = get_employee_by_id(db, employee_id)
     if not employee:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
     updates = payload.model_dump(exclude_unset=True)
@@ -58,8 +63,8 @@ def update(db: Session, employee_id: str, payload: EmployeeUpdate, actor_id: int
         )
 
 
-def delete(db: Session, employee_id: str):
-    employee = get_employee_by_code(db, employee_id)
+def delete(db: Session, employee_id: int):
+    employee = get_employee_by_id(db, employee_id)
     if not employee:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
     delete_employee(db, employee)

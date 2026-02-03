@@ -4,15 +4,16 @@ import sys
 from logging.config import fileConfig
 from pathlib import Path
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
+
+from alembic import context
 
 # Ensure `import app...` works when running from `server/`
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
+from app import models  # noqa: F401,E402
 from app.core.config import settings  # noqa: E402
 from app.db.base import Base  # noqa: E402
-from app import models  # noqa: F401,E402
 
 config = context.config
 
@@ -57,4 +58,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-

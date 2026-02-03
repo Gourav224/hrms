@@ -4,10 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from sqlalchemy import text
 from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
-from sqlalchemy import text
 
+from app import models  # noqa: F401
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.exceptions import (
@@ -22,7 +23,6 @@ from app.db.base import Base
 from app.db.session import engine
 from app.middleware.request_logging import request_logger
 from app.middleware.security_headers import SecurityHeadersMiddleware
-from app import models  # noqa: F401
 
 
 def create_app() -> FastAPI:
@@ -37,16 +37,22 @@ def create_app() -> FastAPI:
 
     app.state.limiter = limiter
 
+    # CORS configuration
+    cors_origins = settings.cors_allow_origins
+    allow_all_origins = "*" in cors_origins
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins="*",
+        allow_origins=[] if allow_all_origins else cors_origins,
+        allow_origin_regex=".*" if allow_all_origins else None,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     app.add_middleware(SlowAPIMiddleware)
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts="*")
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+    # We use '*' for TrustedHostMiddleware in this Lite app to avoid port matching issues in local dev
     app.add_middleware(SecurityHeadersMiddleware)
     if settings.enable_https_redirect:
         app.add_middleware(HTTPSRedirectMiddleware)

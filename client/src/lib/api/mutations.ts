@@ -1,4 +1,5 @@
 import type {
+  AdminUser,
   Attendance,
   AttendanceCreate,
   AttendanceUpdate,
@@ -10,6 +11,7 @@ import type {
   SessionData,
 } from "@/types";
 
+import { buildQueryString } from "./query";
 import { requestData } from "./request";
 
 export const loginRequest = async (email: string, password: string) => {
@@ -33,20 +35,20 @@ export const createEmployee = async (payload: EmployeeCreate) =>
     data: payload,
   });
 
-export const updateEmployee = async (employeeId: string, payload: EmployeeUpdate) =>
+export const updateEmployee = async (employeeId: number, payload: EmployeeUpdate) =>
   requestData<Employee>({
     url: `/employees/${employeeId}`,
     method: "PATCH",
     data: payload,
   });
 
-export const deleteEmployee = async (employeeId: string) =>
+export const deleteEmployee = async (employeeId: number) =>
   requestData<{ status: string }>({
     url: `/employees/${employeeId}`,
     method: "DELETE",
   });
 
-export const createAttendance = async (employeeId: string, payload: AttendanceCreate) =>
+export const createAttendance = async (employeeId: number, payload: AttendanceCreate) =>
   requestData<Attendance>({
     url: `/employees/${employeeId}/attendance`,
     method: "POST",
@@ -54,7 +56,7 @@ export const createAttendance = async (employeeId: string, payload: AttendanceCr
   });
 
 export const updateAttendance = async (
-  employeeId: string,
+  employeeId: number,
   attendanceId: number,
   payload: AttendanceUpdate,
 ) =>
@@ -64,13 +66,13 @@ export const updateAttendance = async (
     data: payload,
   });
 
-export const deleteAttendance = async (employeeId: string, attendanceId: number) =>
+export const deleteAttendance = async (employeeId: number, attendanceId: number) =>
   requestData<{ status: string }>({
     url: `/employees/${employeeId}/attendance/${attendanceId}`,
     method: "DELETE",
   });
 
-export const upsertTodayAttendance = async (employeeId: string, status: "Present" | "Absent") =>
+export const upsertTodayAttendance = async (employeeId: number, status: "Present" | "Absent") =>
   requestData<Attendance>({
     url: `/employees/${employeeId}/attendance/today`,
     method: "PUT",
@@ -81,4 +83,43 @@ export const getOverviewStats = async () =>
   requestData<OverviewStats>({
     url: "/stats/overview",
     method: "GET",
+  });
+
+export const listAdmins = async (params: { limit?: number; offset?: number; q?: string } = {}) =>
+  requestData<AdminUser[]>({
+    url: `/admins${buildQueryString(params)}`,
+    method: "GET",
+  });
+
+export const createAdmin = async (payload: {
+  name?: string | null;
+  email: string;
+  password: string;
+  role: "admin" | "manager";
+}) =>
+  requestData<AdminUser>({
+    url: "/admins",
+    method: "POST",
+    data: payload,
+  });
+
+export const updateAdmin = async (
+  adminId: number,
+  payload: {
+    name?: string | null;
+    email?: string;
+    password?: string;
+    role?: "admin" | "manager";
+  },
+) =>
+  requestData<AdminUser>({
+    url: `/admins/${adminId}`,
+    method: "PATCH",
+    data: payload,
+  });
+
+export const deleteAdmin = async (adminId: number) =>
+  requestData<{ status: string }>({
+    url: `/admins/${adminId}`,
+    method: "DELETE",
   });

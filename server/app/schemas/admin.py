@@ -4,9 +4,8 @@ from datetime import datetime
 
 from pydantic import EmailStr, Field
 
-from app.schemas.base import BaseSchema
-
 from app.core.rbac import Role
+from app.schemas.base import BaseSchema
 
 
 class AdminCreate(BaseSchema):

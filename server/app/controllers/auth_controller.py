@@ -5,13 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.rbac import Role
 from app.core.security import create_access_token
 from app.schemas.admin import AdminCreate, SessionResponse, Token
-from app.services.admin_service import (
-    authenticate_admin,
-    create_admin,
-    get_admin_by_email,
-    has_any_admin,
-    update_last_active,
-)
+from app.services import admins_service as admin_service
 
 
 def bootstrap_admin(db: Session, payload: AdminCreate) -> None:
@@ -26,13 +20,13 @@ def bootstrap_admin(db: Session, payload: AdminCreate) -> None:
             detail="Bootstrap admin must have admin role.",
         )
     try:
-        create_admin(
+        admin_service.create_admin_user(
             db,
-            payload.email,
-            payload.password,
-            payload.role,
-            actor_id=None,
             name=payload.name,
+            email=str(payload.email),
+            password=payload.password,
+            role=payload.role,
+            actor_id=None,
         )
     except IntegrityError:
         raise HTTPException(
@@ -62,13 +56,13 @@ def create_manager(db: Session, payload: AdminCreate, actor_id: int) -> None:
     if payload.role not in {Role.ADMIN, Role.MANAGER}:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported role.")
     try:
-        create_admin(
+        admin_service.create_admin_user(
             db,
-            payload.email,
-            payload.password,
-            payload.role,
-            actor_id=actor_id,
             name=payload.name,
+            email=str(payload.email),
+            password=payload.password,
+            role=payload.role,
+            actor_id=actor_id,
         )
     except IntegrityError:
         raise HTTPException(

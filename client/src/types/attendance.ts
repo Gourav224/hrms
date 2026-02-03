@@ -28,3 +28,32 @@ export type AttendanceSummary = {
   total_present: number;
   total_absent: number;
 };
+
+export type AttendanceListItem = {
+  id: number;
+  employee_id: number;
+  employee_code: string;
+  employee_name: string;
+  employee_email: string;
+  department: string;
+  date: string;
+  status: AttendanceStatus;
+  created_at: string;
+  updated_at: string;
+  created_by_id: number | null;
+  updated_by_id: number | null;
+};
+
+export type AttendanceStatsPoint = {
+  date: string;
+  present: number;
+  absent: number;
+  unmarked: number;
+};
+
+export type AttendanceStatsMeta = {
+  total_employees: number;
+  date_from: string;
+  date_to: string;
+  employee_id?: number;
+};

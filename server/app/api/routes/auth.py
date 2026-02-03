@@ -3,14 +3,13 @@ from sqlalchemy.orm import Session
 
 from app.controllers.auth_controller import bootstrap_admin, create_manager, get_session, login
 from app.core.config import settings
-from app.core.ratelimit import limiter
 from app.core.deps import require_roles
+from app.core.ratelimit import limiter
 from app.core.rbac import Role
 from app.db.deps import get_db
 from app.schemas.admin import AdminCreate, LoginRequest, SessionResponse, Token
 from app.schemas.response import ApiResponse
 from app.utils.response import success_response
-
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

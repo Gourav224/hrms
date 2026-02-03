@@ -2,7 +2,6 @@ from typing import Any, TypeVar
 
 from app.schemas.response import ApiResponse
 
-
 T = TypeVar("T")
 
 

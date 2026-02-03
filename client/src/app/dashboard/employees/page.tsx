@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+
+import Link from "next/link";
 
 import { BriefcaseBusiness, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { useSWRConfig } from "swr";
-import useSWRMutation from "swr/mutation";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -39,11 +39,9 @@ import {
 import { useDebouncedSearch } from "@/hooks/use-debounced-search";
 import { useEmployeeMutations, useEmployees } from "@/hooks/use-employees";
 import { getErrorMessage, getFieldErrors } from "@/lib/api/handlers";
-import { upsertTodayAttendance } from "@/lib/api/mutations";
 import type { Employee, EmployeeCreate, EmployeeUpdate } from "@/types";
 
 const EmployeeSchema = z.object({
-  employee_id: z.string().min(1, "Employee ID is required.").max(50, "Employee ID is too long."),
   full_name: z.string().min(1, "Full name is required.").max(120, "Full name is too long."),
   email: z.string().email("Enter a valid email.").max(255, "Email is too long."),
   department: z.string().min(1, "Department is required.").max(120, "Department is too long."),
@@ -52,35 +50,20 @@ const EmployeeSchema = z.object({
 type EmployeeFormValues = z.infer<typeof EmployeeSchema>;
 
 const emptyEmployeeForm: EmployeeFormValues = {
-  employee_id: "",
   full_name: "",
   email: "",
   department: "",
 };
 
 export default function EmployeesPage() {
-  const { mutate: mutateGlobal } = useSWRConfig();
-  const [q, setQ] = useQueryState("q", { defaultValue: "" });
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
 
   const { searchInput, search, setSearchInput } = useDebouncedSearch({
-    initialValue: q,
+    initialValue: "",
     delay: 350,
   });
   const limit = 20;
   const offset = useMemo(() => Math.max(0, (page - 1) * limit), [page]);
-
-  useEffect(() => {
-    if (search !== q) {
-      setQ(search);
-    }
-  }, [q, search, setQ]);
-
-  useEffect(() => {
-    if (q !== searchInput) {
-      setSearchInput(q);
-    }
-  }, [q, searchInput, setSearchInput]);
 
   const { employees, meta, isLoading, error } = useEmployees({
     q: search,
@@ -89,18 +72,6 @@ export default function EmployeesPage() {
   });
 
   const { createEmployee, updateEmployee, deleteEmployee } = useEmployeeMutations();
-
-  const markToday = useSWRMutation(
-    "/employees/attendance/today",
-    async (_key, { arg }: { arg: { employeeId: string; status: "Present" | "Absent" } }) =>
-      upsertTodayAttendance(arg.employeeId, arg.status),
-    {
-      onSuccess: () => {
-        mutateGlobal((key) => typeof key === "string" && key.startsWith("/employees"));
-        mutateGlobal("/stats/overview");
-      },
-    },
-  );
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -129,7 +100,6 @@ export default function EmployeesPage() {
     setFormErrors({});
     setEditing(employee);
     setFormValues({
-      employee_id: employee.employee_id,
       full_name: employee.full_name,
       email: employee.email,
       department: employee.department,
@@ -190,7 +160,7 @@ export default function EmployeesPage() {
       department: payload.department,
     };
     try {
-      await updateEmployee.trigger({ employeeId: editing.employee_id, payload: updatePayload });
+      await updateEmployee.trigger({ employeeId: editing.id, payload: updatePayload });
       setEditOpen(false);
       setEditing(null);
     } catch (err) {
@@ -205,7 +175,7 @@ export default function EmployeesPage() {
     }
     setSubmitError(null);
     try {
-      await deleteEmployee.trigger({ employeeId: deleting.employee_id });
+      await deleteEmployee.trigger({ employeeId: deleting.id });
       setDeleteOpen(false);
       setDeleting(null);
     } catch (err) {
@@ -215,34 +185,41 @@ export default function EmployeesPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
-      <Card className="rounded-2xl">
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2">
-              <BriefcaseBusiness className="h-5 w-5" />
-              Employees
-            </CardTitle>
-            <p className="text-muted-foreground text-sm">
-              Create employees, update details, and mark today’s attendance.
-            </p>
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <div className="bg-card flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-sm sm:w-[320px]">
-              <Search className="text-muted-foreground h-4 w-4" />
-              <Input
-                className="h-7 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
-                value={searchInput}
-                onChange={(event) => {
-                  setSearchInput(event.target.value);
-                  setPage(1);
-                }}
-                placeholder="Search employees..."
-              />
+      <Card className="overflow-hidden rounded-3xl border-none shadow-sm">
+        <CardHeader className="bg-muted/30 border-b p-6 sm:p-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1.5">
+              <CardTitle className="flex items-center gap-3 text-2xl font-bold tracking-tight">
+                <div className="bg-primary/10 text-primary rounded-xl p-2.5">
+                  <BriefcaseBusiness className="h-6 w-6" />
+                </div>
+                Employee Registry
+              </CardTitle>
+              <p className="text-muted-foreground text-sm font-medium">
+                Manage your organization&apos;s workforce and attendance trackings.
+              </p>
             </div>
-            <Button className="sm:shrink-0" onClick={openCreate}>
-              <Plus className="h-4 w-4" />
-              Add employee
-            </Button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="bg-background ring-muted-foreground/10 focus-within:ring-primary/20 flex w-full items-center gap-3 rounded-2xl border px-4 py-2.5 shadow-xs transition-all focus-within:ring-4 sm:w-[320px]">
+                <Search className="text-muted-foreground group-focus-within:text-primary h-4 w-4 transition-colors" />
+                <Input
+                  className="h-6 border-0 bg-transparent p-0 text-sm font-medium shadow-none focus-visible:ring-0"
+                  value={searchInput}
+                  onChange={(event) => {
+                    setSearchInput(event.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="Search by name, email..."
+                />
+              </div>
+              <Button
+                className="shadow-primary/20 rounded-2xl px-6 py-6 font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-95"
+                onClick={openCreate}
+              >
+                <Plus className="h-5 w-5" />
+                Add Employee
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -254,60 +231,78 @@ export default function EmployeesPage() {
           ) : null}
 
           {!isLoading && !error && employees.length > 0 ? (
-            <div className="bg-card rounded-xl border">
+            <div className="overflow-hidden rounded-2xl border shadow-xs">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Employee ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                <TableHeader className="bg-muted/40">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-muted-foreground/70 h-12 py-0 text-[10px] font-bold tracking-wider uppercase">
+                      ID
+                    </TableHead>
+                    <TableHead className="text-muted-foreground/70 h-12 py-0 text-[10px] font-bold tracking-wider uppercase">
+                      Name
+                    </TableHead>
+                    <TableHead className="text-muted-foreground/70 h-12 py-0 text-[10px] font-bold tracking-wider uppercase">
+                      Email
+                    </TableHead>
+                    <TableHead className="text-muted-foreground/70 h-12 py-0 text-[10px] font-bold tracking-wider uppercase">
+                      Department
+                    </TableHead>
+                    <TableHead className="text-muted-foreground/70 h-12 py-0 text-right text-[10px] font-bold tracking-wider uppercase">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {employees.map((employee) => (
-                    <TableRow key={employee.id}>
-                      <TableCell className="font-medium">{employee.employee_id}</TableCell>
-                      <TableCell>{employee.full_name}</TableCell>
-                      <TableCell className="text-muted-foreground">{employee.email}</TableCell>
-                      <TableCell className="text-muted-foreground">{employee.department}</TableCell>
+                    <TableRow
+                      key={employee.id}
+                      className="group hover:bg-muted/30 transition-colors"
+                    >
+                      <TableCell className="text-muted-foreground/80 font-mono text-xs font-semibold">
+                        {employee.employee_id}
+                      </TableCell>
+                      <TableCell>
+                        <Link
+                          href={`/dashboard/employees/${employee.id}`}
+                          className="text-foreground decoration-primary/30 font-semibold underline-offset-4 hover:underline"
+                        >
+                          {employee.full_name}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm font-medium">
+                        {employee.email}
+                      </TableCell>
+                      <TableCell>
+                        <span className="bg-primary/5 text-primary inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-bold tracking-wide">
+                          {employee.department}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex flex-wrap items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                           <Button
+                            asChild
                             size="sm"
-                            variant="secondary"
-                            onClick={() =>
-                              markToday.trigger({
-                                employeeId: employee.employee_id,
-                                status: "Present",
-                              })
-                            }
-                            disabled={markToday.isMutating}
+                            variant="ghost"
+                            className="text-primary hover:bg-primary/10 h-8 rounded-lg text-xs font-bold tracking-tight uppercase"
                           >
-                            {markToday.isMutating ? <Spinner /> : null}
-                            Present
+                            <Link href={`/dashboard/employees/${employee.id}`}>Attendance</Link>
                           </Button>
                           <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              markToday.trigger({
-                                employeeId: employee.employee_id,
-                                status: "Absent",
-                              })
-                            }
-                            disabled={markToday.isMutating}
+                            size="icon"
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-foreground hover:bg-background h-8 w-8 rounded-lg"
+                            onClick={() => openEdit(employee)}
                           >
-                            {markToday.isMutating ? <Spinner /> : null}
-                            Absent
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={() => openEdit(employee)}>
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="h-3.5 w-3.5" />
                             <span className="sr-only">Edit</span>
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={() => openDelete(employee)}>
-                            <Trash2 className="text-destructive h-4 w-4" />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8 rounded-lg"
+                            onClick={() => openDelete(employee)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
                             <span className="sr-only">Delete</span>
                           </Button>
                         </div>
@@ -364,22 +359,6 @@ export default function EmployeesPage() {
             <DialogDescription>Create a new employee record.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
-            <Field data-invalid={!!formErrors.employee_id}>
-              <FieldLabel>
-                <FieldTitle>Employee ID</FieldTitle>
-              </FieldLabel>
-              <FieldContent>
-                <Input
-                  value={formValues.employee_id}
-                  onChange={(event) =>
-                    setFormValues((prev) => ({ ...prev, employee_id: event.target.value }))
-                  }
-                  placeholder="EMP-001"
-                />
-                <FieldError>{formErrors.employee_id}</FieldError>
-              </FieldContent>
-            </Field>
-
             <Field data-invalid={!!formErrors.full_name}>
               <FieldLabel>
                 <FieldTitle>Full name</FieldTitle>
@@ -463,7 +442,7 @@ export default function EmployeesPage() {
                 <FieldTitle>Employee ID</FieldTitle>
               </FieldLabel>
               <FieldContent>
-                <Input value={formValues.employee_id} disabled />
+                <Input value={editing?.employee_id ?? ""} disabled />
               </FieldContent>
             </Field>
 

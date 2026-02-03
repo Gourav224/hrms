@@ -13,7 +13,7 @@ from app.core.rbac import Role
 from app.core.security import hash_password
 from app.db.base import Base
 from app.db.session import SessionLocal, engine
-from app.models import Attendance, AttendanceStatus, Admin, Employee
+from app.models import Admin, Attendance, AttendanceStatus, Employee
 
 
 def seed() -> None:
@@ -23,7 +23,9 @@ def seed() -> None:
         reset_admin = os.getenv("SEED_RESET_ADMIN", "false").lower() == "true"
         admin = db.query(Admin).filter(Admin.email == "admin@hrms.local").first()
         if not admin:
-            admin = Admin(email="admin@hrms.com", password_hash=hash_password("admin1234"), role=Role.ADMIN)
+            admin = Admin(
+                email="admin@hrms.com", password_hash=hash_password("admin1234"), role=Role.ADMIN
+            )
             db.add(admin)
             db.commit()
             db.refresh(admin)

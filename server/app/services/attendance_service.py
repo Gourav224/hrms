@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import case, func
 from sqlalchemy.exc import IntegrityError
@@ -23,6 +23,69 @@ def list_attendance(
     total = query.count()
     items = query.order_by(Attendance.date.desc()).offset(offset).limit(limit).all()
     return items, total
+
+
+def list_attendance_all(
+    db: Session,
+    employee_id: int | None,
+    date_from: date | None,
+    date_to: date | None,
+    limit: int,
+    offset: int,
+) -> tuple[list[tuple[Attendance, Employee]], int]:
+    query = db.query(Attendance, Employee).join(Employee, Attendance.employee_id == Employee.id)
+    if employee_id is not None:
+        query = query.filter(Attendance.employee_id == employee_id)
+    if date_from:
+        query = query.filter(Attendance.date >= date_from)
+    if date_to:
+        query = query.filter(Attendance.date <= date_to)
+    total = query.count()
+    items = (
+        query.order_by(Attendance.date.desc(), Attendance.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return items, total
+
+
+def attendance_stats(
+    db: Session,
+    date_from: date,
+    date_to: date,
+    employee_id: int | None,
+) -> tuple[list[dict], int]:
+    total_employees = (
+        1 if employee_id is not None else int(db.query(func.count(Employee.id)).scalar() or 0)
+    )
+    query = db.query(
+        Attendance.date,
+        func.sum(case((Attendance.status == AttendanceStatus.PRESENT, 1), else_=0)),
+        func.sum(case((Attendance.status == AttendanceStatus.ABSENT, 1), else_=0)),
+    ).filter(Attendance.date >= date_from, Attendance.date <= date_to)
+    if employee_id is not None:
+        query = query.filter(Attendance.employee_id == employee_id)
+    rows = query.group_by(Attendance.date).all()
+    by_date = {row[0]: {"present": int(row[1] or 0), "absent": int(row[2] or 0)} for row in rows}
+
+    points: list[dict] = []
+    cursor = date_from
+    while cursor <= date_to:
+        counts = by_date.get(cursor, {"present": 0, "absent": 0})
+        present = counts["present"]
+        absent = counts["absent"]
+        unmarked = max(total_employees - present - absent, 0)
+        points.append(
+            {
+                "date": cursor,
+                "present": present,
+                "absent": absent,
+                "unmarked": unmarked,
+            }
+        )
+        cursor += timedelta(days=1)
+    return points, total_employees
 
 
 def get_attendance_by_id(db: Session, employee: Employee, attendance_id: int) -> Attendance | None:

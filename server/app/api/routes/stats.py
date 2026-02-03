@@ -11,7 +11,6 @@ from app.schemas.response import ApiResponse
 from app.schemas.stats import OverviewStats
 from app.utils.response import success_response
 
-
 router = APIRouter(prefix="/stats", tags=["stats"])
 
 
@@ -26,4 +25,3 @@ def overview(
 ):
     stats = stats_controller.get_overview(db, for_date)
     return success_response(stats, message="Stats fetched")
-

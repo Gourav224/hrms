@@ -6,11 +6,10 @@ from pydantic import BaseModel, ConfigDict
 
 from app.schemas.base import BaseSchema
 
-
 T = TypeVar("T")
 
 
-class ApiResponse(BaseModel, Generic[T]):
+class ApiResponse[T](BaseModel):
     success: bool = True
     message: str
     data: T | None = None

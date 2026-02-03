@@ -2,7 +2,10 @@ export type { ApiResponse, ErrorDetail, ErrorResponse, PaginationMeta } from "./
 export type {
   Attendance,
   AttendanceCreate,
+  AttendanceListItem,
   AttendanceStatus,
+  AttendanceStatsMeta,
+  AttendanceStatsPoint,
   AttendanceSummary,
   AttendanceUpdate,
 } from "./attendance";

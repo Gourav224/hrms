@@ -150,6 +150,8 @@ then run the Alembic upgrade for future-proofing.
 - `PATCH /api/v1/employees/{employee_id}/attendance/{attendance_id}`
 - `DELETE /api/v1/employees/{employee_id}/attendance/{attendance_id}` (admin)
 
+- `GET /api/v1/attendance` (optional filters: employee_id, date_from, date_to)
+
 - `GET /api/v1/stats/overview?date=YYYY-MM-DD`
 
 ## Notes

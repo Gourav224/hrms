@@ -1,16 +1,20 @@
 "use client";
 
+import { toast } from "sonner";
 import type { Key } from "swr";
 import useSWR from "swr";
 import { useSWRConfig } from "swr";
 import useSWRMutation from "swr/mutation";
 
+import { getErrorMessage } from "@/lib/api/handlers";
 import { createAttendance, deleteAttendance, updateAttendance } from "@/lib/api/mutations";
 import { buildQueryString } from "@/lib/api/query";
 import type {
   ApiResponse,
   Attendance,
   AttendanceCreate,
+  AttendanceStatsMeta,
+  AttendanceStatsPoint,
   AttendanceSummary,
   AttendanceUpdate,
   PaginationMeta,
@@ -25,14 +29,17 @@ type AttendanceQuery = {
 
 const revalidateAttendance = (
   mutate: (key?: Key | ((key: Key) => boolean)) => void,
-  employeeId: string,
+  employeeId: number,
 ) => {
   mutate((key) => typeof key === "string" && key.startsWith(`/employees/${employeeId}`));
 };
 
-export const useAttendance = (employeeId: string, params: AttendanceQuery = {}) => {
+export const useAttendance = (employeeId?: number, params: AttendanceQuery = {}) => {
   const query = buildQueryString(params);
-  const key = `/employees/${employeeId}/attendance${query}`;
+  const key =
+    employeeId === undefined || employeeId === null
+      ? null
+      : `/employees/${employeeId}/attendance${query}`;
   const { data, error, isLoading, mutate } = useSWR<ApiResponse<Attendance[]>>(key);
 
   return {
@@ -45,11 +52,14 @@ export const useAttendance = (employeeId: string, params: AttendanceQuery = {}) 
 };
 
 export const useAttendanceSummary = (
-  employeeId: string,
+  employeeId?: number,
   params: { date_from?: string; date_to?: string } = {},
 ) => {
   const query = buildQueryString(params);
-  const key = `/employees/${employeeId}/attendance/summary${query}`;
+  const key =
+    employeeId === undefined || employeeId === null
+      ? null
+      : `/employees/${employeeId}/attendance/summary${query}`;
   const { data, error, isLoading, mutate } = useSWR<ApiResponse<AttendanceSummary>>(key);
 
   return {
@@ -60,32 +70,60 @@ export const useAttendanceSummary = (
   };
 };
 
-export const useAttendanceMutations = (employeeId: string) => {
+export const useAttendanceStats = (
+  params: { date_from?: string; date_to?: string; employee_id?: number } = {},
+) => {
+  const query = buildQueryString(params);
+  const key = `/attendance/stats${query}`;
+  const { data, error, isLoading, mutate } = useSWR<ApiResponse<AttendanceStatsPoint[]>>(key);
+
+  return {
+    points: data?.data ?? [],
+    meta: (data?.meta ?? null) as AttendanceStatsMeta | null,
+    error,
+    isLoading,
+    mutate,
+  };
+};
+
+export const useAttendanceMutations = (employeeId: number) => {
   const { mutate } = useSWRConfig();
 
   const createAttendanceMutation = useSWRMutation(
     `/employees/${employeeId}/attendance`,
-    async (_key, { arg }: { arg: AttendanceCreate }) => createAttendance(employeeId, arg),
+    async (_key: string, { arg }: { arg: AttendanceCreate }) => createAttendance(employeeId, arg),
     {
-      onSuccess: () => revalidateAttendance(mutate, employeeId),
+      onSuccess: () => {
+        revalidateAttendance(mutate, employeeId);
+        toast.success("Attendance saved.");
+      },
+      onError: (err) => toast.error(getErrorMessage(err)),
     },
   );
 
   const updateAttendanceMutation = useSWRMutation(
     `/employees/${employeeId}/attendance/update`,
-    async (_key, { arg }: { arg: { attendanceId: number; payload: AttendanceUpdate } }) =>
+    async (_key: string, { arg }: { arg: { attendanceId: number; payload: AttendanceUpdate } }) =>
       updateAttendance(employeeId, arg.attendanceId, arg.payload),
     {
-      onSuccess: () => revalidateAttendance(mutate, employeeId),
+      onSuccess: () => {
+        revalidateAttendance(mutate, employeeId);
+        toast.success("Attendance updated.");
+      },
+      onError: (err) => toast.error(getErrorMessage(err)),
     },
   );
 
   const deleteAttendanceMutation = useSWRMutation(
     `/employees/${employeeId}/attendance/delete`,
-    async (_key, { arg }: { arg: { attendanceId: number } }) =>
+    async (_key: string, { arg }: { arg: { attendanceId: number } }) =>
       deleteAttendance(employeeId, arg.attendanceId),
     {
-      onSuccess: () => revalidateAttendance(mutate, employeeId),
+      onSuccess: () => {
+        revalidateAttendance(mutate, employeeId);
+        toast.success("Attendance deleted.");
+      },
+      onError: (err) => toast.error(getErrorMessage(err)),
     },
   );
 

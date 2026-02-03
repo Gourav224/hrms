@@ -11,4 +11,3 @@ class AdminUpdate(BaseSchema):
     email: EmailStr | None = None
     password: str | None = Field(default=None, min_length=8, max_length=128)
     role: Role | None = None
-

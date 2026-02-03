@@ -1,4 +1,4 @@
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -24,18 +24,32 @@ def list_employees(
     return items, total
 
 
+def get_employee_by_id(db: Session, employee_id: int) -> Employee | None:
+    return db.query(Employee).filter(Employee.id == employee_id).first()
+
+
 def get_employee_by_code(db: Session, employee_id: str) -> Employee | None:
     return db.query(Employee).filter(Employee.employee_id == employee_id).first()
 
 
+def get_employee_by_email(db: Session, email: str) -> Employee | None:
+    return db.query(Employee).filter(Employee.email == email).first()
+
+
+def generate_employee_code(db: Session) -> str:
+    last_id = db.query(func.max(Employee.id)).scalar() or 0
+    next_id = int(last_id) + 1
+    return f"EMP-{next_id:03d}"
+
+
 def create_employee(
     db: Session,
-    employee_id: str,
     full_name: str,
     email: str,
     department: str,
     actor_id: int | None,
 ) -> Employee:
+    employee_id = generate_employee_code(db)
     employee = Employee(
         employee_id=employee_id,
         full_name=full_name,

@@ -5,8 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useForm } from "@tanstack/react-form";
-import { zodValidator } from "@tanstack/zod-form-adapter";
-import { ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getErrorMessage } from "@/lib/api/handlers";
 
 const LoginSchema = z.object({
-  email: z.string().email("Enter a valid email."),
+  email: z.email("Enter a valid email."),
   password: z.string().min(1, "Password is required.").max(128, "Password is too long."),
 });
 
@@ -26,12 +25,21 @@ export default function AuthPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm({
-    validatorAdapter: zodValidator,
     defaultValues: {
       email: "",
       password: "",
+    },
+    validators: {
+      onSubmit: ({ value }) => {
+        const parsed = LoginSchema.safeParse(value);
+        if (parsed.success) {
+          return;
+        }
+        return parsed.error.flatten().fieldErrors;
+      },
     },
     onSubmit: async ({ value }) => {
       setError(null);
@@ -95,7 +103,15 @@ export default function AuthPage() {
                   form.handleSubmit();
                 }}
               >
-                <form.Field name="email" validators={{ onChange: LoginSchema.shape.email }}>
+                <form.Field
+                  name="email"
+                  validators={{
+                    onChange: ({ value }) => {
+                      const result = LoginSchema.shape.email.safeParse(value);
+                      return result.success ? undefined : result.error.issues[0]?.message;
+                    },
+                  }}
+                >
                   {(field) => (
                     <Field data-invalid={field.state.meta.errors.length > 0}>
                       <FieldLabel>
@@ -116,21 +132,44 @@ export default function AuthPage() {
                   )}
                 </form.Field>
 
-                <form.Field name="password" validators={{ onChange: LoginSchema.shape.password }}>
+                <form.Field
+                  name="password"
+                  validators={{
+                    onChange: ({ value }) => {
+                      const result = LoginSchema.shape.password.safeParse(value);
+                      return result.success ? undefined : result.error.issues[0]?.message;
+                    },
+                  }}
+                >
                   {(field) => (
                     <Field data-invalid={field.state.meta.errors.length > 0}>
                       <FieldLabel>
                         <FieldTitle>Password</FieldTitle>
                       </FieldLabel>
                       <FieldContent>
-                        <Input
-                          type="password"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(event) => field.handleChange(event.target.value)}
-                          placeholder="••••••••"
-                          autoComplete="current-password"
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            value={field.state.value}
+                            onBlur={field.handleBlur}
+                            onChange={(event) => field.handleChange(event.target.value)}
+                            placeholder="••••••••"
+                            autoComplete="current-password"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
                         <FieldError>{field.state.meta.errors[0] ?? null}</FieldError>
                       </FieldContent>
                     </Field>
