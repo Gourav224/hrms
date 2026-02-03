@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.models import AttendanceStatus
 from app.schemas.attendance import AttendanceCreate, AttendanceUpdate
 from app.services.attendance_service import (
+    attendance_summary,
     create_attendance,
     delete_attendance,
     get_attendance_by_id,
@@ -98,3 +99,22 @@ def delete(db: Session, employee_id: str, attendance_id: int):
     if not attendance:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attendance not found.")
     delete_attendance(db, attendance)
+
+
+def summary(
+    db: Session,
+    employee_id: str,
+    date_from: date | None,
+    date_to: date | None,
+):
+    employee = get_employee_by_code(db, employee_id)
+    if not employee:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
+    stats = attendance_summary(db, employee, date_from, date_to)
+    return {
+        "employee_id": employee.id,
+        "employee_code": employee.employee_id,
+        "total_records": stats["total"],
+        "total_present": stats["present"],
+        "total_absent": stats["absent"],
+    }

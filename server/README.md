@@ -149,6 +149,7 @@ Note: Once you adopt migrations, consider disabling `create_all()` on startup in
 - `DELETE /api/v1/employees/{employee_id}` (admin)
 
 - `GET /api/v1/employees/{employee_id}/attendance`
+- `GET /api/v1/employees/{employee_id}/attendance/summary`
 - `GET /api/v1/employees/{employee_id}/attendance/{attendance_id}`
 - `POST /api/v1/employees/{employee_id}/attendance`
 - `PATCH /api/v1/employees/{employee_id}/attendance/{attendance_id}`

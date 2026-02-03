@@ -16,6 +16,21 @@ router = APIRouter(prefix="/employees/{employee_id}/attendance", tags=["attendan
 
 
 @router.get(
+    "/summary",
+    response_model=ApiResponse[dict],
+    dependencies=[Depends(require_roles(Role.ADMIN, Role.MANAGER))],
+)
+def attendance_summary(
+    employee_id: str,
+    db: Session = Depends(get_db),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+):
+    summary = attendance_controller.summary(db, employee_id, date_from, date_to)
+    return success_response(summary, message="Attendance summary fetched")
+
+
+@router.get(
     "",
     response_model=ApiResponse[list[AttendanceRead]],
     dependencies=[Depends(require_roles(Role.ADMIN, Role.MANAGER))],
