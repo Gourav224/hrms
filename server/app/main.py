@@ -39,14 +39,14 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_allow_origins,
+        allow_origins="*",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     app.add_middleware(SlowAPIMiddleware)
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts="*")
     app.add_middleware(SecurityHeadersMiddleware)
     if settings.enable_https_redirect:
         app.add_middleware(HTTPSRedirectMiddleware)

@@ -13,6 +13,7 @@ swr
 nuqs adapter
 tailwind
 motion
+zustand
 or any other if needed 
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -19,14 +20,18 @@ def seed() -> None:
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
+        reset_admin = os.getenv("SEED_RESET_ADMIN", "false").lower() == "true"
         admin = db.query(Admin).filter(Admin.email == "admin@hrms.local").first()
         if not admin:
-            admin = Admin(
-                email="admin@hrms.local",
-                password_hash=hash_password("admin1234"),
-                role=Role.ADMIN,
-            )
+            admin = Admin(email="admin@hrms.com", password_hash=hash_password("admin1234"), role=Role.ADMIN)
             db.add(admin)
+            db.commit()
+            db.refresh(admin)
+        if admin.name is None:
+            admin.name = "HR Admin"
+        if reset_admin:
+            admin.password_hash = hash_password("admin1234")
+        if admin.name is not None or reset_admin:
             db.commit()
             db.refresh(admin)
 
@@ -35,7 +40,7 @@ def seed() -> None:
                 Employee(
                     employee_id="EMP-001",
                     full_name="Ava Patel",
-                    email="ava.patel@hrms.local",
+                    email="ava.patel@hrms.com",
                     department="Engineering",
                     created_by_id=admin.id,
                     updated_by_id=admin.id,
@@ -43,7 +48,7 @@ def seed() -> None:
                 Employee(
                     employee_id="EMP-002",
                     full_name="Noah Kim",
-                    email="noah.kim@hrms.local",
+                    email="noah.kim@hrms.com",
                     department="HR",
                     created_by_id=admin.id,
                     updated_by_id=admin.id,
@@ -51,7 +56,7 @@ def seed() -> None:
                 Employee(
                     employee_id="EMP-003",
                     full_name="Liam Chen",
-                    email="liam.chen@hrms.local",
+                    email="liam.chen@hrms.com",
                     department="Finance",
                     created_by_id=admin.id,
                     updated_by_id=admin.id,

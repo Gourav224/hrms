@@ -52,8 +52,8 @@ curl -X POST http://127.0.0.1:8000/api/v1/auth/bootstrap \
 2. **Login**
 ```bash
 curl -X POST http://127.0.0.1:8000/api/v1/auth/login \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin@hrms.local&password=admin1234"
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@hrms.local","password":"admin1234"}'
 ```
 
 3. **Use the token**
@@ -64,13 +64,18 @@ curl http://127.0.0.1:8000/api/v1/employees \
 
 ## Seeding Data
 ```bash
-uv run python -m app.seed
+uv run seed.py
 ```
 
 This will create a default admin (if missing) and a few employees with attendance.
 Default admin credentials:
 - `admin@hrms.local`
 - `admin1234`
+
+If you changed the password hashing algorithm locally, you can force-reset the admin password:
+```bash
+SEED_RESET_ADMIN=true uv run seed.py
+```
 
 ## Pagination
 List endpoints support:
@@ -103,44 +108,33 @@ Errors:
 }
 ```
 
-## Migrations (Optional)
-This project uses `Base.metadata.create_all()` on startup. If you want full migrations:
+## Migrations
+This project still uses `Base.metadata.create_all()` on startup (for a “just run it” dev experience),
+but **existing Neon databases** won’t automatically pick up new columns. Use Alembic to update schema.
 
-1. Install Alembic (local dev only):
+1. Apply migrations:
 ```bash
-uv install alembic
-```
-
-2. Initialize Alembic (first time):
-```bash
-uv run alembic init alembic
-```
-
-3. Configure `alembic.ini`:
-- Set `sqlalchemy.url` to your `DATABASE_URL`, or read it inside `alembic/env.py`.
-
-4. Update `alembic/env.py`:
-- Import `Base` and models:
-  - `from app.db.base import Base`
-  - `from app import models`
-- Set `target_metadata = Base.metadata`
-
-5. Generate migration:
-```bash
-uv run alembic revision --autogenerate -m "init"
-```
-
-6. Apply migration:
-```bash
+uv sync
 uv run alembic upgrade head
 ```
 
-Note: Once you adopt migrations, consider disabling `create_all()` on startup in production.
+If you see an error like:
+`psycopg.errors.UndefinedColumn: column admins.name does not exist`
+it means your DB schema is behind; running `alembic upgrade head` will add the missing columns.
+
+Note: If your DB is brand new and has no tables yet, run the API once (it will create tables),
+then run the Alembic upgrade for future-proofing.
 
 ## Key Endpoints
 - `POST /api/v1/auth/bootstrap`
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/admins` (admin only)
+
+- `GET /api/v1/admins` (admin only)
+- `GET /api/v1/admins/{admin_id}` (admin only)
+- `POST /api/v1/admins` (admin only)
+- `PATCH /api/v1/admins/{admin_id}` (admin only)
+- `DELETE /api/v1/admins/{admin_id}` (admin only)
 
 - `GET /api/v1/employees`
 - `GET /api/v1/employees/{employee_id}`
@@ -152,8 +146,11 @@ Note: Once you adopt migrations, consider disabling `create_all()` on startup in
 - `GET /api/v1/employees/{employee_id}/attendance/summary`
 - `GET /api/v1/employees/{employee_id}/attendance/{attendance_id}`
 - `POST /api/v1/employees/{employee_id}/attendance`
+- `PUT /api/v1/employees/{employee_id}/attendance/today` (upsert today)
 - `PATCH /api/v1/employees/{employee_id}/attendance/{attendance_id}`
 - `DELETE /api/v1/employees/{employee_id}/attendance/{attendance_id}` (admin)
+
+- `GET /api/v1/stats/overview?date=YYYY-MM-DD`
 
 ## Notes
 - Timestamps and user stamps are stored on `employees`, `attendance`, and `admins`.

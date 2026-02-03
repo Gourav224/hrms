@@ -1,0 +1,24 @@
+//  @ts-check
+
+/** @type {import('prettier').Config} */
+
+const config = {
+  semi: true,
+  trailingComma: "all",
+  singleQuote: false,
+  printWidth: 100,
+  tabWidth: 2,
+  useTabs: false,
+  arrowParens: "always",
+  endOfLine: "lf",
+  bracketSpacing: true,
+  bracketSameLine: false,
+  jsxSingleQuote: false,
+  plugins: ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"],
+  importOrder: ["^react", "^next", "<THIRD_PARTY_MODULES>", "^@/(.*)$", "^[./]"],
+  importOrderSeparation: true,
+  importOrderSortSpecifiers: true,
+  importOrderCaseInsensitive: true,
+};
+
+export default config;

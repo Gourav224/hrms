@@ -33,6 +33,14 @@ def get_attendance_by_id(db: Session, employee: Employee, attendance_id: int) ->
     )
 
 
+def get_attendance_by_date(db: Session, employee: Employee, date_value: date) -> Attendance | None:
+    return (
+        db.query(Attendance)
+        .filter(Attendance.employee_id == employee.id, Attendance.date == date_value)
+        .first()
+    )
+
+
 def create_attendance(
     db: Session,
     employee: Employee,
@@ -73,6 +81,19 @@ def update_attendance(
         raise exc
     db.refresh(attendance)
     return attendance
+
+
+def upsert_attendance_for_date(
+    db: Session,
+    employee: Employee,
+    date_value: date,
+    status: AttendanceStatus,
+    actor_id: int | None,
+) -> Attendance:
+    existing = get_attendance_by_date(db, employee, date_value)
+    if existing:
+        return update_attendance(db, existing, {"status": status}, actor_id=actor_id)
+    return create_attendance(db, employee, date_value, status, actor_id=actor_id)
 
 
 def delete_attendance(db: Session, attendance: Attendance) -> None:

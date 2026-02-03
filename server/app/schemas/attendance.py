@@ -31,3 +31,7 @@ class AttendanceRead(BaseSchema):
 class AttendanceUpdate(BaseSchema):
     date: dt_date | None = None
     status: AttendanceStatus | None = None
+
+
+class AttendanceTodayUpsert(BaseSchema):
+    status: AttendanceStatus

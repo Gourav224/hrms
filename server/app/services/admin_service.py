@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session
 
 from app.core.rbac import Role
@@ -9,8 +11,16 @@ def get_admin_by_email(db: Session, email: str) -> Admin | None:
     return db.query(Admin).filter(Admin.email == email).first()
 
 
-def create_admin(db: Session, email: str, password: str, role: Role, actor_id: int | None) -> Admin:
+def create_admin(
+    db: Session,
+    email: str,
+    password: str,
+    role: Role,
+    actor_id: int | None,
+    name: str | None,
+) -> Admin:
     admin = Admin(
+        name=name,
         email=email,
         password_hash=hash_password(password),
         role=role,
@@ -34,3 +44,11 @@ def authenticate_admin(db: Session, email: str, password: str) -> Admin | None:
 
 def has_any_admin(db: Session) -> bool:
     return db.query(Admin).first() is not None
+
+
+def update_last_active(db: Session, admin: Admin) -> Admin:
+    admin.last_active_at = datetime.now(timezone.utc)
+    admin.updated_by_id = admin.id
+    db.commit()
+    db.refresh(admin)
+    return admin

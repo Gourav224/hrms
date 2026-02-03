@@ -10,6 +10,7 @@ from app.services.attendance_service import (
     attendance_summary,
     create_attendance,
     delete_attendance,
+    upsert_attendance_for_date,
     get_attendance_by_id,
     list_attendance,
     update_attendance,
@@ -50,6 +51,14 @@ def create_for_employee(
             status_code=status.HTTP_409_CONFLICT,
             detail="Attendance for this employee and date already exists.",
         )
+
+
+def upsert_today(db: Session, employee_id: str, status_value: AttendanceStatus, actor_id: int | None):
+    employee = get_employee_by_code(db, employee_id)
+    if not employee:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found.")
+    today = date.today()
+    return upsert_attendance_for_date(db, employee, today, status_value, actor_id=actor_id)
 
 
 def get_one(db: Session, employee_id: str, attendance_id: int):

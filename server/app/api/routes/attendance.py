@@ -7,7 +7,8 @@ from app.controllers import attendance_controller
 from app.core.deps import require_roles
 from app.core.rbac import Role
 from app.db.deps import get_db
-from app.schemas.attendance import AttendanceCreate, AttendanceRead, AttendanceUpdate
+from app.models import AttendanceStatus as ModelAttendanceStatus
+from app.schemas.attendance import AttendanceCreate, AttendanceRead, AttendanceTodayUpsert, AttendanceUpdate
 from app.schemas.response import ApiResponse
 from app.utils.response import success_response
 
@@ -62,6 +63,22 @@ def get_attendance(
 ):
     attendance = attendance_controller.get_one(db, employee_id, attendance_id)
     return success_response(attendance, message="Attendance fetched")
+
+
+@router.put("/today", response_model=ApiResponse[AttendanceRead])
+def upsert_today_attendance(
+    employee_id: str,
+    payload: AttendanceTodayUpsert,
+    db: Session = Depends(get_db),
+    current_admin=Depends(require_roles(Role.ADMIN, Role.MANAGER)),
+):
+    attendance = attendance_controller.upsert_today(
+        db,
+        employee_id,
+        ModelAttendanceStatus(payload.status.value),
+        actor_id=current_admin.id,
+    )
+    return success_response(attendance, message="Attendance updated")
 
 
 @router.post("", response_model=ApiResponse[AttendanceRead], status_code=status.HTTP_201_CREATED)
