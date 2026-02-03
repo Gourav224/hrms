@@ -1,0 +1,33 @@
+from __future__ import annotations
+
+from datetime import date as dt_date
+from datetime import datetime
+from enum import Enum
+
+from app.schemas.base import BaseSchema
+
+
+class AttendanceStatus(str, Enum):
+    PRESENT = "Present"
+    ABSENT = "Absent"
+
+
+class AttendanceCreate(BaseSchema):
+    date: dt_date
+    status: AttendanceStatus
+
+
+class AttendanceRead(BaseSchema):
+    id: int
+    employee_id: int
+    date: dt_date
+    status: AttendanceStatus
+    created_at: datetime
+    updated_at: datetime
+    created_by_id: int | None = None
+    updated_by_id: int | None = None
+
+
+class AttendanceUpdate(BaseSchema):
+    date: dt_date | None = None
+    status: AttendanceStatus | None = None

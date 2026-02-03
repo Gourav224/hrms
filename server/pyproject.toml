@@ -4,4 +4,33 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "email-validator>=2.3.0",
+    "fastapi>=0.128.0",
+    "passlib[bcrypt]>=1.7.4",
+    "psycopg[binary]>=3.3.2",
+    "pydantic>=2.12.5",
+    "python-dotenv>=1.2.1",
+    "python-jose[cryptography]>=3.5.0",
+    "python-multipart>=0.0.22",
+    "slowapi>=0.1.9",
+    "sqlalchemy>=2.0.46",
+    "uvicorn>=0.40.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.14.14",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.14",
+]
